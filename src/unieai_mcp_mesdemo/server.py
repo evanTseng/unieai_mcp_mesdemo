@@ -39,7 +39,14 @@ async def call_mes_api(path: str, payload: dict):
 @app.post("/api/staff/check-in", 
           tags=["人員管理"], 
           summary="人員上工登記",
-          description="當員工抵達站點準備作業時調用，紀錄員工開始作業的時間與位置。")
+          description="""
+    【人員上工登記】
+    當使用者提到「某人開始工作」、「某人到崗」、「人員報到」或「開啟作業」時使用。
+    此工具會將員工 ID 繫結至特定的工作站點，啟動工時計算。
+    參數：
+    - staff_id: 員工工號 (例如: A01, F01)
+    - station_id: 站點編號 (例如: S01, Assembly_Line_1)
+    """)
 async def api_staff_check_in(data: StaffRequest):
     return await staff_check_in(data.staff_id, data.station_id)
 
@@ -51,7 +58,14 @@ async def staff_check_in(staff_id: str, station_id: str) -> str:
 @app.post("/api/staff/check-out", 
           tags=["人員管理"], 
           summary="人員下工登記",
-          description="當員工完成作業或休息離開站點時調用，結束該時段的工時計算。")
+          description="""
+    【人員下工登記】
+    當使用者提到「下班」、「休息」、「離開崗位」、「完成今日作業」或「結束工作」時使用。
+    此工具會解除員工與站點的繫結，並停止工時統計。
+    參數：
+    - staff_id: 員工工號 (例如: A01)
+    - station_id: 站點編號 (例如: S01)
+    """)
 async def api_staff_check_out(data: StaffRequest):
     return await staff_check_out(data.staff_id, data.station_id)
 
@@ -63,7 +77,14 @@ async def staff_check_out(staff_id: str, station_id: str) -> str:
 @app.post("/api/job/entry", 
           tags=["工單管理"], 
           summary="工單進站",
-          description="紀錄特定工單進入站點準備加工，用於追蹤在製品 (WIP) 位置。")
+          description="""
+    【工單進站/投產】
+    當有新的生產任務抵達特定機台、開始加工特定編號的產品或工單時使用。
+    用於追蹤生產進度與在製品 (WIP) 的實體位置。
+    參數：
+    - job_id: 工單編號 (例如: JOB123, WO-2024-001)
+    - station_id: 目標加工站點 (例如: S01, CNC_Machine)
+    """)
 async def api_job_entry(data: JobRequest):
     return await job_entry(data.job_id, data.station_id)
 
@@ -75,7 +96,14 @@ async def job_entry(job_id: str, station_id: str) -> str:
 @app.post("/api/job/exit", 
           tags=["工單管理"], 
           summary="工單出站",
-          description="紀錄工單完成該站點加工並移出，系統將自動更新生產進度。")
+          description="""
+    【工單出站/完工】
+    當特定工單在該站點加工完成、準備移往下一站、或是生產結束時使用。
+    執行此工具代表該站點的加工程序已結束。
+    參數：
+    - job_id: 工單編號 (例如: JOB123)
+    - station_id: 當前離開的站點 (例如: S01)
+    """)
 async def api_job_exit(data: JobRequest):
     return await job_exit(data.job_id, data.station_id)
 
