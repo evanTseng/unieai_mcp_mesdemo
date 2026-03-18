@@ -1,9 +1,14 @@
 import httpx
 import uvicorn
+import os
+from fastapi import FastAPI
 from fastmcp import FastMCP
 
-# 初始化 MCP Server
+# 1. 初始化 FastMCP
 mcp = FastMCP("MES-Assistant")
+
+# 2. 初始化 FastAPI (這是顯示 /docs 的關鍵)
+app = FastAPI(title="MES MCP Server API Docs")
 
 BASE_URL = "https://mesapidemo.zeabur.app"
 
@@ -47,20 +52,15 @@ async def job_exit(job_id: str, station_id: str) -> str:
         })
         return res.text
 
-#def main():
-#    # 針對 Zeabur 部署，建議使用 SSE 模式
-#    # 可以透過環境變數動態調整 port
-#    import os
-#    port = int(os.getenv("PORT", 9090))
-#    mcp.run(mode="sse", port=port)
+# 3. 將 MCP 工具掛載到 FastAPI 上 (預設會掛載在 /sse)
+# 這會同時生成 OpenAPI 定義並開啟 Swagger UI
+mcp.mount_to_api(app)
 
-#if __name__ == "__main__":
-#    main()
+def main():
+    """MCP 伺服器入口點 - 使用 uvicorn 啟動 FastAPI app"""
+    #port = int(os.getenv("PORT", 8000))
+    # 這裡要跑的是 app，而不是 mcp.run()
+    uvicorn.run(app, host="0.0.0.0", port=9090)
 
-
-
-def main():  
-    """MCP 伺服器入口點"""  
-    mcp.run(transport="sse")
-if __name__ == "__main__":  
-    main()  
+if __name__ == "__main__":
+    main()
