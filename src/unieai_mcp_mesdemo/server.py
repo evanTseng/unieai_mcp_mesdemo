@@ -28,11 +28,29 @@ class JobRequest(BaseModel):
 
 # === 核心邏輯 (共享函式) ===
 
-async def call_mes_api(path: str, payload: dict):
+#async def call_mes_api(path: str, payload: dict):
+#    async with httpx.AsyncClient() as client:
+#        res = await client.post(f"{BASE_URL}{path}", json=payload)
+#        # 假設 MES API 回傳的是 JSON 字串，我們直接返回
+#        return res.json()
+
+
+
+async def call_mes_api(method: str, path: str, payload: dict = None):
     async with httpx.AsyncClient() as client:
-        res = await client.post(f"{BASE_URL}{path}", json=payload)
-        # 假設 MES API 回傳的是 JSON 字串，我們直接返回
+        # 使用 client.request 可以根據字串動態決定方法
+        # 如果是 GET，payload 會放在 params；如果是 POST，則放在 json
+        res = await client.request(
+            method=method.upper(), 
+            url=f"{BASE_URL}{path}", 
+            json=payload if method.upper() != "GET" else None,
+            params=payload if method.upper() == "GET" else None
+        )
+        res.raise_for_status()  # 建議加上錯誤檢查
         return res.json()
+
+
+
 
 # === API 路由定義 (具備詳細說明) ===
 
@@ -53,7 +71,7 @@ async def api_staff_check_in(data: StaffRequest):
 @mcp.tool()
 async def staff_check_in(staff_id: str, station_id: str) -> str:
     """人員上工登記：紀錄 [員工編號] 於 [站點] 開始工作。"""
-    return str(await call_mes_api("/staff/check-in", {"staff_id": staff_id, "station_id": station_id}))
+    return str(await call_mes_api("POST", "/staff/check-in", {"staff_id": staff_id, "station_id": station_id}))
 
 @app.post("/api/staff/check-out", 
           tags=["人員管理"], 
@@ -72,7 +90,7 @@ async def api_staff_check_out(data: StaffRequest):
 @mcp.tool()
 async def staff_check_out(staff_id: str, station_id: str) -> str:
     """人員下工登記：紀錄 [員工編號] 離開 [站點]。"""
-    return str(await call_mes_api("/staff/check-out", {"staff_id": staff_id, "station_id": station_id}))
+    return str(await call_mes_api("POST", "/staff/check-out", {"staff_id": staff_id, "station_id": station_id}))
 
 @app.post("/api/job/entry", 
           tags=["工單管理"], 
@@ -91,7 +109,7 @@ async def api_job_entry(data: JobRequest):
 @mcp.tool()
 async def job_entry(job_id: str, station_id: str) -> str:
     """工單進站：將 [工單編號] 移入 [站點]。"""
-    return str(await call_mes_api("/job/entry", {"job_id": job_id, "station_id": station_id}))
+    return str(await call_mes_api("POST", "/job/entry", {"job_id": job_id, "station_id": station_id}))
 
 @app.post("/api/job/exit", 
           tags=["工單管理"], 
@@ -110,7 +128,53 @@ async def api_job_exit(data: JobRequest):
 @mcp.tool()
 async def job_exit(job_id: str, station_id: str) -> str:
     """工單出站：將 [工單編號] 從 [站點] 移出。"""
-    return str(await call_mes_api("/job/exit", {"job_id": job_id, "station_id": station_id}))
+    return str(await call_mes_api("POST", "/job/exit", {"job_id": job_id, "station_id": station_id}))
+
+
+
+@app.get("/api/staff/logs/{staff_id}", tags=["查詢服務"], summary="查詢人員出勤紀錄",description="""
+    【工具：查詢人員出勤履歷】
+    用途：當使用者詢問關於員工的「工作時間」、「是否在位」、「報到紀錄」或「今日工時」時使用。
+    輸入參數：
+    - staff_id: 員工工號 (例如: 'A01', 'B05')
+    回傳範例：[{"staff_id": "A01", "action": "check-in", "timestamp": "..."}]
+    
+    使用場景舉例：
+    - 「幫我查 A01 今天幾點打卡的？」
+    - 「確認一下某員工現在是在哪一站工作？」
+    - 「列出這名員工今天的上下工歷史。」
+    """)
+async def api_get_staff_logs(staff_id: str):
+    return await get_staff_logs(staff_id)
+
+@mcp.tool()
+async def get_staff_logs(staff_id: str) -> str:
+    """查詢特定員工的歷史上下工紀錄。當使用者問「某人今天何時上工」或「查詢某人的出勤狀態」時使用。"""
+    # 過濾假資料
+    return str(await call_mes_api("GET", "/staff/records", {"staff_id": staff_id}))
+
+
+@app.get("/api/job/logs/{job_id}", tags=["查詢服務"], summary="查詢工單流向紀錄", description="""
+    【工具：查詢工單生產進度】
+    用途：當使用者想要追蹤「產品位置」、「工單進度」、「生產歷史」或「在哪個站點停留」時使用。
+    輸入參數：
+    - job_id: 工單或產品編號 (例如: 'JOB123')
+    回傳範例：[{"job_id": "JOB123", "event": "entry", "station_id": "S01", ...}]
+    
+    使用場景舉例：
+    - 「這張工單 JOB123 現在生產到哪一個步驟了？」
+    - 「查一下這批貨什麼時候從 S01 站移出的？」
+    - 「顯示此工單的所有進出站紀錄。」
+    """)
+async def api_get_job_logs(job_id: str):
+    return await get_job_logs(job_id)
+
+@mcp.tool()
+async def get_job_logs(job_id: str) -> str:
+    """查詢特定工單的生產履歷。當使用者問「這張單子現在到哪了」或「查看工單進度」時使用。"""
+    # 過濾假資料
+    return str(await call_mes_api("GET", "/job/records", {"job_id": job_id}))
+
 
 # === MCP 協議路由 (SSE) ===
 
