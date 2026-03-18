@@ -1,16 +1,23 @@
 import httpx
 import uvicorn
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastmcp import FastMCP
 
-# 1. 初始化 FastMCP
+# 1. 初始化 FastMCP (用於定義 Tools)
 mcp = FastMCP("MES-Assistant")
 
-# 2. 初始化 FastAPI (這是顯示 /docs 的關鍵)
-app = FastAPI(title="MES MCP Server API Docs")
+# 2. 初始化 FastAPI (用於提供 /docs 網頁)
+app = FastAPI(
+    title="MES Assistant MCP Server",
+    description="提供人員上/下工與工單進/出站的 API 文件",
+    version="1.0.0"
+)
 
 BASE_URL = "https://mesapidemo.zeabur.app"
+
+# === MCP Tools 定義 ===
 
 @mcp.tool()
 async def staff_check_in(staff_id: str, station_id: str) -> str:
@@ -52,14 +59,32 @@ async def job_exit(job_id: str, station_id: str) -> str:
         })
         return res.text
 
-# 3. 將 MCP 工具掛載到 FastAPI 上 (預設會掛載在 /sse)
-# 這會同時生成 OpenAPI 定義並開啟 Swagger UI
-mcp.mount_to_api(app)
+# === 路由設定 ===
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return """
+    <h1>MES MCP Server 運行中</h1>
+    <p>查看 API 文件: <a href="/docs">/docs</a></p>
+    <p>MCP SSE 連線網址: <code>/sse</code></p>
+    """
+
+# 關鍵：處理 MCP 的 SSE 連線，這取代了報錯的 mount_to_api
+@app.get("/sse")
+async def sse(request: Request):
+    async with mcp._app.sse_handler(request) as handler:
+        return handler
+
+@app.post("/messages")
+async def messages(request: Request):
+    return await mcp._app.handle_post_messages(request)
+
+# === 啟動進入點 ===
 
 def main():
-    """MCP 伺服器入口點 - 使用 uvicorn 啟動 FastAPI app"""
-    #port = int(os.getenv("PORT", 8000))
-    # 這裡要跑的是 app，而不是 mcp.run()
+    """啟動 Uvicorn 伺服器"""
+    #port = int(os.getenv("PORT", 8080))
+    # 這裡啟動的是 FastAPI 的 app
     uvicorn.run(app, host="0.0.0.0", port=9090)
 
 if __name__ == "__main__":
