@@ -47,12 +47,20 @@ async def job_exit(job_id: str, station_id: str) -> str:
         })
         return res.text
 
-def main():
-    # 針對 Zeabur 部署，建議使用 SSE 模式
-    # 可以透過環境變數動態調整 port
-    import os
-    port = int(os.getenv("PORT", 9090))
-    mcp.run(mode="sse", port=port)
+#def main():
+#    # 針對 Zeabur 部署，建議使用 SSE 模式
+#    # 可以透過環境變數動態調整 port
+#    import os
+#    port = int(os.getenv("PORT", 9090))
+#    mcp.run(mode="sse", port=port)
 
 if __name__ == "__main__":
     main()
+
+
+
+def main():  
+    """MCP 伺服器入口點"""  
+    mcp.run(transport="sse", host="0.0.0.0", port=9090)
+if __name__ == "__main__":  
+    main()  
