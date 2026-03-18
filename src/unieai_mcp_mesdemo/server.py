@@ -61,6 +61,6 @@ async def job_exit(job_id: str, station_id: str) -> str:
 
 def main():  
     """MCP 伺服器入口點"""  
-    mcp.run(transport="sse", port=9090)
+    mcp.run(transport="sse")
 if __name__ == "__main__":  
     main()  
