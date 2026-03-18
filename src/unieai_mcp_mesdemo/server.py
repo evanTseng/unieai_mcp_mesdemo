@@ -61,6 +61,6 @@ if __name__ == "__main__":
 
 def main():  
     """MCP 伺服器入口點"""  
-    mcp.run(transport="sse", host="0.0.0.0", port=9090)
+    mcp.run(transport="sse", port=9090)
 if __name__ == "__main__":  
     main()  
