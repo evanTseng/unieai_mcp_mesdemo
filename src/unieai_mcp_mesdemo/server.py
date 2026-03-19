@@ -58,12 +58,20 @@ async def call_mes_api(method: str, path: str, payload: dict = None):
           tags=["人員管理"], 
           summary="人員上工登記",
           description="""
-    【人員上工登記】
-    當使用者提到「某人開始工作」、「某人到崗」、「人員報到」或「開啟作業」時使用。
-    此工具會將員工 ID 繫結至特定的工作站點，啟動工時計算。
-    參數：
-    - staff_id: 員工工號 (例如: A01, F01)
-    - station_id: 站點編號 (例如: S01, Assembly_Line_1)
+    ### 工具名稱：staff_checkin (人員上工登記)
+**描述：** 當使用者表達「開始工作」的意圖時觸發。適用詞彙包含：上工、報到、到崗、開工、接班、開始作業、啟動計時。
+此工具會將員工 ID 與工作站點繫結並開始計算工時。
+
+**對話邏輯規範：**
+1. **強制參數：** `staff_id` 與 `station_id` 均為必填。
+2. **主動追問：** 若使用者僅提及「我要上班」而未提供工號或站點，AI 必須在回覆中明確詢問缺失的資訊，不可虛構參數。
+3. **格式規範：** - staff_id 應為字母加數字（如: A01）。
+   - station_id 可為編號（如: S01）或有名稱的站點（如: Assembly_Line）。
+4. **多輪處理：** 若使用者在對話過程中才分次提供資訊，AI 需記憶前文，直到參數齊全後立即呼叫此工具。
+
+**參數詳細說明：**
+- staff_id : 員工的唯一辨識碼。
+- station_id : 具體的工作位置或設備編號。
     """)
 async def api_staff_check_in(data: StaffRequest):
     return await staff_check_in(data.staff_id, data.station_id)
@@ -77,12 +85,17 @@ async def staff_check_in(staff_id: str, station_id: str) -> str:
           tags=["人員管理"], 
           summary="人員下工登記",
           description="""
-    【人員下工登記】
-    當使用者提到「下班」、「休息」、「離開崗位」、「完成今日作業」或「結束工作」時使用。
-    此工具會解除員工與站點的繫結，並停止工時統計。
-    參數：
-    - staff_id: 員工工號 (例如: A01)
-    - station_id: 站點編號 (例如: S01)
+    ### 工具名稱：staff_checkout (人員下工登記)
+**描述：** 當使用者表達結束工作意圖（如：下班、收工、完成作業、離開崗位）時觸發。
+此工具具備邏輯：
+1. 自動識別語義：包含所有與「停止工作」相關的口語表達。
+2. 參數檢查：必須具備 `staff_id` 與 `station_id` 才能執行。
+3. 缺失補全：若使用者未提供參數，須主動詢問；若只提供一個，須追問另一個。
+4. 安全確認：在執行前，應簡單覆核資訊以防誤觸。
+
+**參數定義：**
+- staff_id: 員工編號。
+- station_id: 站點編號。
     """)
 async def api_staff_check_out(data: StaffRequest):
     return await staff_check_out(data.staff_id, data.station_id)
@@ -96,12 +109,20 @@ async def staff_check_out(staff_id: str, station_id: str) -> str:
           tags=["工單管理"], 
           summary="工單進站",
           description="""
-    【工單進站/投產】
-    當有新的生產任務抵達特定機台、開始加工特定編號的產品或工單時使用。
-    用於追蹤生產進度與在製品 (WIP) 的實體位置。
-    參數：
-    - job_id: 工單編號 (例如: JOB123, WO-2024-001)
-    - station_id: 目標加工站點 (例如: S01, CNC_Machine)
+    ### 工具名稱：job_checkin (工單進站/投產)
+**描述：** 當有新的生產任務、批次產品或工單抵達特定站點開始加工時觸發。
+此工具用於更新 WIP 狀態，確保系統能追蹤產品的實體位置。
+
+**對話邏輯規範：**
+1. **識別意圖：** 識別如「投產」、「進站」、「開始加工某單」等語義。
+2. **參數必填：** `job_id` (工單) 與 `station_id` (站點) 缺一不可。
+3. **主動引導：** - 若使用者僅給出站點，需詢問：「請提供工單編號以便登記投產。」
+   - 若使用者僅給出工單，需詢問：「這張單要在哪個站點/機台開始作業？」
+4. **上下文關聯：** 若前一輪對話已提到某站點，在詢問工單時應預設該站點，並請使用者確認。
+
+**參數定義：**
+- job_id (string): 工單或生產任務編號。
+- station_id (string): 接收該工單的機台或站點代碼。
     """)
 async def api_job_entry(data: JobRequest):
     return await job_entry(data.job_id, data.station_id)
@@ -115,12 +136,20 @@ async def job_entry(job_id: str, station_id: str) -> str:
           tags=["工單管理"], 
           summary="工單出站",
           description="""
-    【工單出站/完工】
-    當特定工單在該站點加工完成、準備移往下一站、或是生產結束時使用。
-    執行此工具代表該站點的加工程序已結束。
-    參數：
-    - job_id: 工單編號 (例如: JOB123)
-    - station_id: 當前離開的站點 (例如: S01)
+    ### 工具名稱：job_checkout (工單出站/完工)
+**描述：** 當特定的生產工單在當前站點加工結束、準備移轉或完成生產時觸發。
+此工具會標記該工單在該站點的加工程序已「關閉」。
+
+**對話邏輯規範：**
+1. **觸發識別：** 辨識「完工」、「做完了」、「出站」、「下機台」、「移交」等關鍵詞。
+2. **參數防呆：** - 必須同時獲得 `job_id` 與 `station_id` 才能呼叫。
+   - 若使用者只說「這站做完了」，須追問工單編號。
+   - 若使用者只說「工單完成」，須追問是在哪個站點完成。
+3. **流程銜接：** 執行完畢後，可主動詢問是否要進行「下一個站點的進站投產」。
+
+**參數定義：**
+- job_id : 剛完成加工的工單或任務編號。
+- station_id : 該工單目前所在的站點編號。
     """)
 async def api_job_exit(data: JobRequest):
     return await job_exit(data.job_id, data.station_id)
