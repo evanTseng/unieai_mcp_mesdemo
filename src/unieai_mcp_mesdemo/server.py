@@ -76,7 +76,7 @@ async def api_staff_check_in(data: StaffRequest):
 @mcp.tool()
 async def staff_check_in(staff_id: str, station_id: str) -> str:
     """人員上工登記：紀錄 [員工編號] 於 [站點] 開始工作。"""
-    if not staff_id or not station_id: return "參數 [staff_id] 或 [station_id] 不能為空"
+    if not staff_id or not station_id: return "參數 [staff_id] 或 [station_id] 不能為空，參數 [staff_id] 和 [station_id] 必填"
     return str(await call_mes_api("POST", "/staff/check-in", {"staff_id": staff_id, "station_id": station_id}))
 
 @app.post("/api/staff/check-out", 
