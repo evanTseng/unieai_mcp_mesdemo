@@ -45,7 +45,7 @@ def check_empty(params: dict):
         if not value or str(value).strip() == "":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"參數 [{name}] 不能為空"
+                detail=f"參數不能為空，顯示必填參數"
             )
 
 # === API 路由定義 (具備詳細說明) ===
