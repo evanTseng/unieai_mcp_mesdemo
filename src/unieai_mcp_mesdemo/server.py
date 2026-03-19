@@ -45,7 +45,11 @@ def check_empty(params: dict):
         if not value or str(value).strip() == "":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"參數不能為空，顯示必填參數"
+                detail=f"參數不能為空，顯示必填參數。
+                人員上工 : - staff_id : 員工的唯一辨識碼。 - station_id : 具體的工作位置或設備編號。
+                人員下工 : - staff_id : 員工的唯一辨識碼。 - station_id : 具體的工作位置或設備編號。
+                工單進站 : - job_id : 工單或生產任務編號。 - station_id : 接收該工單的機台或站點代碼。
+                工單出站 : - job_id : 工單或生產任務編號。 - station_id : 接收該工單的機台或站點代碼。"
             )
 
 # === API 路由定義 (具備詳細說明) ===
