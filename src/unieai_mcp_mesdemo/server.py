@@ -68,8 +68,8 @@ def check_empty(params: dict):
 3. **多輪處理：** 若使用者在對話過程中才分次提供資訊，AI 需記憶前文，直到參數齊全後立即呼叫此工具。
 4. **確認傳入參數：** 直接告訴用戶需要輸入哪些資訊。
 **參數詳細說明：**
-- staff_id : 員工編號。
-- station_id : 站點編號。
+- 員工編號。
+- 站點編號。
     """)
 async def api_staff_check_in(data: StaffRequest):
     check_empty({"staff_id": data.staff_id, "station_id": data.station_id})
@@ -94,8 +94,8 @@ async def staff_check_in(staff_id: str, station_id: str) -> str:
 4. 安全確認：在執行前，應簡單覆核資訊以防誤觸。
 5. **確認傳入參數：** 直接告訴用戶需要輸入哪些資訊。
 **參數定義：**
-- staff_id: 員工編號。
-- station_id: 站點編號。
+- 員工編號。
+- 站點編號。
     """)
 async def api_staff_check_out(data: StaffRequest):
     check_empty({"staff_id": data.staff_id, "station_id": data.station_id})
@@ -123,8 +123,8 @@ async def staff_check_out(staff_id: str, station_id: str) -> str:
 4. **上下文關聯：** 若前一輪對話已提到某站點，在詢問工單時應預設該站點，並請使用者確認。
 5. **確認傳入參數：** 直接告訴用戶需要輸入哪些資訊。
 **參數定義：**
-- job_id : 工單或生產任務編號。
-- station_id : 接收該工單的機台或站點代碼。
+- 工單或生產任務編號。
+- 接收該工單的機台或站點代碼。
     """)
 async def api_job_entry(data: JobRequest):
     check_empty({"job_id": data.job_id, "station_id": data.station_id})
@@ -152,8 +152,8 @@ async def job_entry(job_id: str, station_id: str) -> str:
 3. **流程銜接：** 執行完畢後，可主動詢問是否要進行「下一個站點的進站投產」。
 4. **確認傳入參數：** 直接告訴用戶需要輸入哪些資訊。
 **參數定義：**
-- job_id : 剛完成加工的工單或任務編號。
-- station_id : 該工單目前所在的站點編號。
+- 剛完成加工的工單或任務編號。
+- 該工單目前所在的站點編號。
     """)
 async def api_job_exit(data: JobRequest):
     check_empty({"job_id": data.job_id, "station_id": data.station_id})
